@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=pyftpdlib
+
+%:
+	dh $@ --with python3,sphinxdoc --buildsystem=pybuild
+
+override_dh_auto_test:
+ifeq "$(filter nocheck,$(DEB_BUILD_OPTIONS))" ""
+	EXCLUDETESTS="test_functional.py test_functional_ssl.py" \
+	PYTHONPATH=. TRAVIS=1 python3 pyftpdlib/test/runner.py
+endif
+
+override_dh_python3:
+	dh_python3 -O--buildsystem=pybuild
+	rm -f ./debian/python3-pyftpdlib/usr/bin/ftpbench
+	rm -rf ./debian/python3-pyftpdlib/usr/lib/python3/dist-packages/pyftpdlib/test/
+
+override_dh_auto_build:
+	dh_auto_build
+	( cd docs; \
+	  PYTHONPATH=. http_proxy='127.0.0.1:9' python3 -m sphinx -M html . _build )

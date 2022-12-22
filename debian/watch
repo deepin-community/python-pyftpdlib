@@ -1,0 +1,3 @@
+version=3
+https://github.com/giampaolo/pyftpdlib/releases \
+.*[^n]/(?:|v|version-|release-|r|REL_|rel-|(?:python-pyftpdlib|pyftpdlib)(?:_|-))(\d[^\s/]*)\.(?:tar\.xz|txz|tar\.bz2|tbz2|tar\.gz|tgz)

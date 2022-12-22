@@ -1,0 +1,133 @@
+python-pyftpdlib (1.5.4-2) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * Use debhelper-compat instead of debian/compat.
+
+  [ Sandro Tosi ]
+  * Drop python2 support; Closes: #938065
+
+ -- Sandro Tosi <morph@debian.org>  Fri, 13 Dec 2019 13:28:46 -0500
+
+python-pyftpdlib (1.5.4-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/changelog: Remove trailing whitespaces
+  * Convert git repository from git-dpm to gbp layout
+  * Use 'python3 -m sphinx' instead of sphinx-build for building docs
+
+  [ W. Martin Borgert ]
+  * New upstream version
+
+ -- W. Martin Borgert <debacle@debian.org>  Thu, 25 Oct 2018 22:33:42 +0000
+
+python-pyftpdlib (1.5.3-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/control: Set Vcs-* to salsa.debian.org
+  * d/copyright: Use https protocol in Format field
+
+  [ W. Martin Borgert ]
+  * New upstream version
+  * Bump standards and dh compat
+  * Remove obsolete patch
+  * Add -doc package
+
+ -- W. Martin Borgert <debacle@debian.org>  Sat, 10 Mar 2018 14:38:48 +0000
+
+python-pyftpdlib (1.5.1-4) unstable; urgency=medium
+
+  * Disable automatic tests, that are known to be unstable (Closes: #856335)
+  * Remove Janos Guljas as maintainer (Closes: #849728)
+
+ -- W. Martin Borgert <debacle@debian.org>  Sat, 22 Apr 2017 22:45:44 +0000
+
+python-pyftpdlib (1.5.1-3) unstable; urgency=medium
+
+  * Set TRAVIS=1 to skip one unit test, marked by upstream as
+    "failing on Travis" (Closes: #842007)
+
+ -- W. Martin Borgert <debacle@debian.org>  Sun, 25 Dec 2016 20:40:48 +0000
+
+python-pyftpdlib (1.5.1-2) unstable; urgency=medium
+
+  * Build-Depend on python{,3}-openssl/python3-openssl and python{,3}-mock.
+  * Run tests from source dir. (Closes: #841079) hopefully
+
+ -- W. Martin Borgert <debacle@debian.org>  Tue, 18 Oct 2016 00:55:20 +0000
+
+python-pyftpdlib (1.5.1-1) unstable; urgency=medium
+
+  * New upstream release. (Closes: #833454)
+  [ Ondřej Nový 2016-03-29 ]
+  * Fixed VCS URL (https)
+
+ -- W. Martin Borgert <debacle@debian.org>  Mon, 10 Oct 2016 23:33:12 +0000
+
+python-pyftpdlib (1.4.0-1) unstable; urgency=low
+
+  [ W. Martin Borgert ]
+  * Add Python 3 package. (Closes: #782512)
+  * Change homepage from Google code to GitHub. (Closes: #782514)
+  * Add myself to Uploaders.
+  * New upstream version. (Closes: #794188)
+
+  [ Janos Guljas, 2013-08-15 ]
+  * Depend and Build-Depend on python-sendfile >= 2.0.0. (Closes: #718576)
+
+ -- W. Martin Borgert <debacle@debian.org>  Sun, 22 Nov 2015 16:54:04 +0000
+
+python-pyftpdlib (1.2.0-1) unstable; urgency=low
+
+  [ Jakub Wilk ]
+  * Use canonical URIs for Vcs-* fields.
+  * Remove DM-Upload-Allowed; it's no longer used by the archive
+    software.
+  * Run tests only if DEB_BUILD_OPTIONS=nocheck is not set.
+
+  [ Janos Guljas ]
+  * New upstream release. (Closes: #717946)
+  * Recommends and Build-Depend (for tests) on python-sendfile.
+  * Raise debhelper compatiblility to 9.
+  * Raise Standards-Version to 3.9.4.
+  * Update copyright years in debian/copyright.
+  * Update Format link in debian/copyright.
+  * Change my email address.
+
+ -- Janos Guljas <janos@debian.org>  Fri, 02 Aug 2013 02:25:28 +0200
+
+python-pyftpdlib (0.7.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * Remove doc directory from debian/docs and debian/doc-base file
+    as upstream removed documentation.
+  * Update years debian/copyright.
+  * Add debian/local-options.
+
+ -- Janos Guljas <janos@resenje.org>  Thu, 26 Jan 2012 04:02:09 +0100
+
+python-pyftpdlib (0.6.0-2) unstable; urgency=low
+
+  * Add DM-Upload-Allowed control field.
+  * Fix dep5 syntax.
+
+ -- Janos Guljas <janos@resenje.org>  Sun, 11 Dec 2011 15:47:48 +0100
+
+python-pyftpdlib (0.6.0-1) unstable; urgency=low
+
+  [ Janos Guljas ]
+  * New upstream release.
+  * Changed my email address to janos@resenje.org.
+  * Bump standards to 3.9.2. No changes needed.
+  * Updated debian/copyright to DEP5 format.
+  * Switch to dh_python2.
+
+  [ Jan Dittberner ]
+  * depend on python (>= 2.6.6-3~) instead of python-all (>= 2.5)
+
+ -- Janos Guljas <janos@resenje.org>  Fri, 27 May 2011 17:50:09 +0200
+
+python-pyftpdlib (0.5.2-1) unstable; urgency=low
+
+  * Initial release. (Closes: #528602)
+
+ -- Janos Guljas <janos@janos.in.rs>  Sun, 20 Jun 2010 22:31:55 +0200

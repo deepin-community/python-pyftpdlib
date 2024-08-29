@@ -379,23 +379,52 @@ Server (acceptor)
     Number of maximum connections accepted for the same IP address (default
     ``0`` == no limit).
 
-  .. method:: serve_forever(timeout=None, blocking=True, handle_exit=True)
+  .. method:: serve_forever(timeout=None, blocking=True, handle_exit=True, worker_processes=1)
 
     Starts the asynchronous IO loop.
 
-    *Changed in version 1.0.0: no longer a classmethod; 'use_poll' and 'count'
-    *parameters were removed. 'blocking' and 'handle_exit' parameters were
-    *added*
+    - (float) timeout: the timeout passed to the underlying IO
+      loop expressed in seconds.
+
+    - (bool) blocking: if False loop once and then return the
+      timeout of the next scheduled call next to expire soonest
+      (if any).
+
+    - (bool) handle_exit: when True catches ``KeyboardInterrupt`` and
+      ``SystemExit`` exceptions (caused by SIGTERM / SIGINT signals) and
+      gracefully exits after cleaning up resources. Also, logs server start and
+      stop.
+
+    - (int) worker_processes: pre-fork a certain number of child
+      processes before starting. See: :ref:`pre-fork-model`.
+      Each child process will keep using a 1-thread, async
+      concurrency model, handling multiple concurrent connections.
+      If the number is None or <= 0 the number of usable cores
+      available on this machine is detected and used.
+      It is a good idea to use this option in case the app risks
+      blocking for too long on a single function call (e.g.
+      hard-disk is slow, long DB query on auth etc.).
+      By splitting the work load over multiple processes the delay
+      introduced by a blocking function call is amortized and divided
+      by the number of worker processes.
+
+    *Changed in version 1.0.0*: no longer a classmethod
+
+    *Changed in version 1.0.0*: 'use_poll' and 'count' parameters were removed
+
+    *Changed in version 1.0.0*: 'blocking' and 'handle_exit' parameters were
+    added
 
   .. method:: close()
 
     Stop accepting connections without disconnecting currently connected
-    clients.
+    clients. :meth:`server_forever` loop will automatically stop when there are
+    no more connected clients.
 
   .. method:: close_all()
 
-    Tell :meth:`server_forever` loop to stop and wait until it does.
-    Also all connected clients will be closed.
+    Disconnect all clients, tell :meth:`server_forever` loop to stop and wait
+    until it does.
 
     *Changed in version 1.0.0: 'map' and 'ignore_all' parameters were removed.*
 
@@ -647,7 +676,7 @@ Extended servers
   A modified version of base :class:`pyftpdlib.servers.FTPServer` class which
   spawns a thread every time a new connection is established. Differently from
   base FTPServer class, the handler will be free to block without hanging the
-  whole IO loop.
+  whole IO loop. See :ref:`changing-the-concurrency-model`.
 
   *New in version 1.0.0*
 
@@ -659,10 +688,10 @@ Extended servers
   A modified version of base :class:`pyftpdlib.servers.FTPServer` class which
   spawns a process every time a new connection is established. Differently from
   base FTPServer class, the handler will be free to block without hanging the
-  whole IO loop.
+  whole IO loop. See :ref:`changing-the-concurrency-model`.
 
   *New in version 1.0.0*
 
   *Changed in 1.2.0: added ioloop parameter; address can also be a pre-existing socket.*
 
-  *Availability: POSIX + Python >= 2.6*
+  *Availability: POSIX*

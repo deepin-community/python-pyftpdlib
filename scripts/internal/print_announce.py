@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (c) 2009 Giampaolo Rodola'. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -15,7 +15,7 @@ from pyftpdlib import __ver__ as PRJ_VERSION
 
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-HISTORY = os.path.abspath(os.path.join(HERE, '../HISTORY.rst'))
+HISTORY = os.path.abspath(os.path.join(HERE, '../../HISTORY.rst'))
 
 PRJ_NAME = 'pyftpdlib'
 PRJ_URL_HOME = 'https://github.com/giampaolo/pyftpdlib'
@@ -50,7 +50,7 @@ Links
 
 --
 
-Giampaolo - http://grodola.blogspot.com
+Giampaolo - https://gmpy.dev/
 """
 
 
@@ -64,7 +64,7 @@ def get_changes():
     block = []
 
     # eliminate the part preceding the first block
-    for i, line in enumerate(lines):
+    for line in enumerate(lines):
         line = lines.pop(0)
         if line.startswith('===='):
             break
@@ -73,7 +73,7 @@ def get_changes():
     for i, line in enumerate(lines):
         line = lines.pop(0)
         line = line.rstrip()
-        if re.match("^- \d+_: ", line):
+        if re.match(r"^- \d+_: ", line):
             num, _, rest = line.partition(': ')
             num = ''.join([x for x in num if x.isdigit()])
             line = "- #%s: %s" % (num, rest)

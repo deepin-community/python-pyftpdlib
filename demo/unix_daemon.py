@@ -1,20 +1,20 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (C) 2007 Giampaolo Rodola' <g.rodola@gmail.com>.
 # Use of this source code is governed by MIT license that can be
 # found in the LICENSE file.
 
 """A basic unix daemon using the python-daemon library:
-http://pypi.python.org/pypi/python-daemon
+http://pypi.python.org/pypi/python-daemon.
 
 Example usages:
 
- $ python unix_daemon.py start
- $ python unix_daemon.py stop
- $ python unix_daemon.py status
- $ python unix_daemon.py  # foreground (no daemon)
- $ python unix_daemon.py --logfile /var/log/ftpd.log start
- $ python unix_daemon.py --pidfile /var/run/ftpd.pid start
+ $ python3 unix_daemon.py start
+ $ python3 unix_daemon.py stop
+ $ python3 unix_daemon.py status
+ $ python3 unix_daemon.py  # foreground (no daemon)
+ $ python3 unix_daemon.py --logfile /var/log/ftpd.log start
+ $ python3 unix_daemon.py --pidfile /var/run/ftpd.pid start
 
 This is just a proof of concept which demonstrates how to daemonize
 the FTP server.
@@ -142,7 +142,7 @@ def daemonize():
         # redirect standard file descriptors
         sys.stdout.flush()
         sys.stderr.flush()
-        si = open(LOG_FILE, 'r')
+        si = open(LOG_FILE)
         so = open(LOG_FILE, 'a+')
         se = open(LOG_FILE, 'a+', 0)
         os.dup2(si.fileno(), sys.stdin.fileno())
@@ -167,8 +167,8 @@ def daemonize():
 
 def main():
     global PID_FILE, LOG_FILE
-    USAGE = "python [-p PIDFILE] [-l LOGFILE]\n\n" \
-            "Commands:\n  - start\n  - stop\n  - status"
+    USAGE = "python3 [-p PIDFILE] [-l LOGFILE]\n\n"
+    USAGE += "Commands:\n  - start\n  - stop\n  - status"
     parser = optparse.OptionParser(usage=USAGE)
     parser.add_option('-l', '--logfile', dest='logfile',
                       help='the log file location')

@@ -1,5 +1,69 @@
 Bug tracker at https://github.com/giampaolo/pyftpdlib/issues
 
+Version: 1.5.9 - 2023-10-25
+===========================
+
+**Enhancements**
+
+- #611: use `ruff` code style checker instead of flake8 + isort (much faster +
+  makes many more code quality checks).
+
+**Bug fixes**
+
+- #604: client connection may be reset in PASV/EPSV mode during TLS handshake.
+  (patch by Benedikt McMullin)
+- #607: possible infinite wait in Epoll  (patch by @stat1c-void)
+- #607: possible infinite traceback printing in DTPHandler (patch by
+  @stat1c-void)
+- #613: (CRITICAL) bugfix for TLS disconnect causing 100% CPU usage. (patch by
+  @hakai)
+- #614: close connection on SSL EOF error, instead of erroneously replying with
+  "226 Transfer completed."
+
+Version: 1.5.8 - 2023-10-02
+===========================
+
+**Enhancements**
+
+- #586: removed Python 2.6 support.
+- #591: speedup logging by 28% by using `logging._srcfile = None` trick. This
+  avoids calling `calling sys._getframe()` for each log record.
+- #605: added support for Python 3.12.
+
+Version: 1.5.7 - 2022-10-04
+===========================
+
+**Enhancements**
+
+- #544: replace Travis with Github Actions for CI testing.
+
+**Bug fixes**
+
+- #481: fix [WinError 10038] an operation was attempted on something that is
+  not a socket.  (patch by Tailing Yuan)
+- #578, [critical]: FTPS broke with PyOpenSSL version 22.1.0.
+
+Version: 1.5.6 - 2020-02-16
+===========================
+
+**Enhancements**
+
+- #467: added pre-fork concurrency model, spawn()ing worker processes to split
+  load.
+- #520: directory LISTing is now 3.7x times faster.
+
+Version: 1.5.5 - 2019-04-04
+===========================
+
+**Enhancements**
+
+- #495: colored test output.
+
+**Bug fixes**
+
+- #492: CRLF line endings are replaced with CRCRLF in ASCII mode downloads.
+- #496: import error due to multiprocessing.Lock() bug.
+
 Version: 1.5.4 - 2018-05-04
 ===========================
 
@@ -110,7 +174,7 @@ Version: 1.4.0 - Date: 2014-06-03
 - #293: project was migrated from Google Code to Github. Code was migrated from
   SVN to GIT.
 - #294: use tox to automate testing on multiple python versions.
-- #295: use travis-ci for continuos test integration.
+- #295: use travis-ci for continuous test integration.
 - #298: pysendfile and PyOpenSSL are now listed as extra deps in setup.py.
 
 **Bug fixes**
@@ -401,7 +465,7 @@ Version: 0.7.0 - Date: 2012-01-25
   often). Some benchmarks:
   schedule:   +0.5x,
   reschedule: +1.7x,
-  cancel:     +477x (with 1 milion scheduled functions),
+  cancel:     +477x (with 1 million scheduled functions),
   run: +8x
   Also, a single scheduled function now consumes 1/3 of the memory thanks
   to ``__slots__`` usage.
@@ -781,7 +845,7 @@ Version: 0.2.0 - Date: 2007-09-17
 
 **Major enhancements**
 
-- #5: it is now possible to set a maximum number of connecions and a maximum
+- #5: it is now possible to set a maximum number of connections and a maximum
   number of connections from the same IP address.
 - #36: added support for FXP site-to-site transfer.
 - #39: added NAT/Firewall support with PASV (passive) mode connections.

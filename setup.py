@@ -8,9 +8,13 @@ $ python setup.py install
 """
 
 from __future__ import print_function
+
+import ast
 import os
 import sys
 import textwrap
+
+
 try:
     from setuptools import setup
 except ImportError:
@@ -20,10 +24,10 @@ except ImportError:
 def get_version():
     INIT = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'pyftpdlib', '__init__.py'))
-    with open(INIT, 'r') as f:
+    with open(INIT) as f:
         for line in f:
             if line.startswith('__ver__'):
-                ret = eval(line.strip().split(' = ')[1])
+                ret = ast.literal_eval(line.strip().split(' = ')[1])
                 assert ret.count('.') == 2, ret
                 for num in ret.split('.'):
                     assert num.isdigit(), ret
@@ -60,8 +64,8 @@ def hilite(s, ok=True, bold=False):
         return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), s)
 
 
-if sys.version_info < (2, 6):
-    sys.exit('python version not supported (< 2.6)')
+if sys.version_info < (2, 7):  # noqa
+    sys.exit('python version not supported (< 2.7)')
 
 require_pysendfile = (os.name == 'posix' and sys.version_info < (3, 3))
 
@@ -71,13 +75,16 @@ if require_pysendfile:
 
 VERSION = get_version()
 
+with open('README.rst') as f:
+    long_description = f.read()
+
 
 def main():
     setup(
         name='pyftpdlib',
         version=get_version(),
         description='Very fast asynchronous FTP server library',
-        long_description=open('README.rst').read(),
+        long_description=long_description,
         license='MIT',
         platforms='Platform Independent',
         author="Giampaolo Rodola'",
@@ -109,12 +116,7 @@ def main():
             'Topic :: System :: Filesystems',
             'Programming Language :: Python',
             'Programming Language :: Python :: 2',
-            'Programming Language :: Python :: 2.6',
-            'Programming Language :: Python :: 2.7',
             'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
-            'Programming Language :: Python :: 3.5',
-            'Programming Language :: Python :: 3.6',
         ],
     )
 

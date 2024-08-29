@@ -77,8 +77,8 @@ pyftpdlib vs. Twisted 12.3
 By using *sendfile()* (Twisted *does not* support sendfile()):
 
 +-----------------------------------------+----------------+----------------+-------------+
-| *benchmark type*                        |  *pyftpdlib*   | *twisted*      | *speedup*   |
-+=========================================+=================+================+============+
+| *benchmark type*                        |  *pyftpdlib*   |  *twisted*     | *speedup*   |
++=========================================+================+================+=============+
 | STOR (client -> server)                 |  585.90 MB/sec | 496.44 MB/sec  | **+0.01x**  |
 +-----------------------------------------+----------------+----------------+-------------+
 | RETR (server -> client)                 | 1652.72 MB/sec | 283.24 MB/sec  | **+4.8x**   |
@@ -99,7 +99,7 @@ By using *sendfile()* (Twisted *does not* support sendfile()):
 By using plain *send()*:
 
 +-----------------------------------------+----------------+---------------+--------------+
-| *benchmark type*                        |tpdlib*         | *twisted*     | *speedup*    |
+| *benchmark type*                        | *tpdlib*       | *twisted*     | *speedup*    |
 +=========================================+================+===============+==============+
 | RETR (server -> client)                 |  894.29 MB/sec | 283.24 MB/sec | **+2.1x**    |
 +-----------------------------------------+----------------+---------------+--------------+
@@ -226,7 +226,7 @@ twisted FTP server
 
 ::
 
-    $ sudo python twist_ftpd.py
+    $ sudo python3 twist_ftpd.py
 
 
 
@@ -256,7 +256,7 @@ The following patch was applied first:
 
 ::
 
-    $ sudo python demo/unix_daemon.py
+    $ sudo python3 demo/unix_daemon.py
 
 
 The `benchmark script <https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench>`__
@@ -264,11 +264,11 @@ was run as:
 
 ::
 
-    python scripts/ftpbench -u USERNAME -p PASSWORD -b all -n 300
+    python3 scripts/ftpbench -u USERNAME -p PASSWORD -b all -n 300
 
 
 ...and for the memory test:
 
 ::
 
-    python scripts/ftpbench -u USERNAME -p PASSWORD -b all -n 300 -k FTP_SERVER_PID
+    python3 scripts/ftpbench -u USERNAME -p PASSWORD -b all -n 300 -k FTP_SERVER_PID

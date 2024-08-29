@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (C) 2007 Giampaolo Rodola' <g.rodola@gmail.com>.
 # Use of this source code is governed by MIT license that can be
@@ -9,7 +9,7 @@ A FTP server which handles every connection in a separate process.
 Useful if your handler class contains blocking calls or your
 filesystem is too slow.
 
-POSIX only; requires python >= 2.6.
+POSIX only.
 """
 
 from pyftpdlib.authorizers import DummyAuthorizer

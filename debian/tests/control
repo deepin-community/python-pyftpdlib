@@ -1,0 +1,3 @@
+Test-Command: EXCLUDETESTS="test_functional.py test_functional_ssl.py" PYTHONPATH=. TRAVIS=1 python3 pyftpdlib/test/runner.py
+Depends: @, python3-psutil
+Restrictions: allow-stderr

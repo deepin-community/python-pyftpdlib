@@ -43,11 +43,14 @@ import time
 import traceback
 
 from .ioloop import Acceptor
-from .ioloop import IOLoop
+from .log import PREFIX
+from .log import PREFIX_MPROC
 from .log import config_logging
 from .log import debug
 from .log import is_logging_configured
 from .log import logger
+from .prefork import fork_processes
+
 
 __all__ = ['FTPServer', 'ThreadedFTPServer']
 _BSD = 'bsd' in sys.platform
@@ -122,6 +125,7 @@ class FTPServer(Acceptor):
 
     @property
     def address(self):
+        """The address this server is listening on as a (ip, port) tuple."""
         return self.socket.getsockname()[:2]
 
     def _map_len(self):
@@ -134,7 +138,7 @@ class FTPServer(Acceptor):
         else:
             return self._map_len() <= self.max_cons
 
-    def _log_start(self):
+    def _log_start(self, prefork=False):
         def get_fqname(obj):
             try:
                 return obj.__module__ + "." + obj.__class__.__name__
@@ -148,29 +152,25 @@ class FTPServer(Acceptor):
             # If we get to this point it means the user hasn't
             # configured any logger. We want logging to be on
             # by default (stderr).
-            config_logging()
+            config_logging(prefix=PREFIX_MPROC if prefork else PREFIX)
 
         if self.handler.passive_ports:
             pasv_ports = "%s->%s" % (self.handler.passive_ports[0],
                                      self.handler.passive_ports[-1])
         else:
             pasv_ports = None
-        addr = self.address
-        if hasattr(self.handler, 'ssl_protocol'):
-            proto = "FTP+SSL"
-        else:
-            proto = "FTP"
-        logger.info(">>> starting %s server on %s:%s, pid=%i <<<"
-                    % (proto, addr[0], addr[1], os.getpid()))
-        if ('ThreadedFTPServer' in __all__ and
-                issubclass(self.__class__, ThreadedFTPServer)):
-            logger.info("concurrency model: multi-thread")
-        elif ('MultiprocessFTPServer' in __all__ and
-                issubclass(self.__class__, MultiprocessFTPServer)):
-            logger.info("concurrency model: multi-process")
+        model = 'prefork + ' if prefork else ''
+        if 'ThreadedFTPServer' in __all__ and \
+                issubclass(self.__class__, ThreadedFTPServer):
+            model += 'multi-thread'
+        elif 'MultiprocessFTPServer' in __all__ and \
+                issubclass(self.__class__, MultiprocessFTPServer):
+            model += 'multi-process'
         elif issubclass(self.__class__, FTPServer):
-            logger.info("concurrency model: async")
-
+            model += 'async'
+        else:
+            model += 'unknown (custom class)'
+        logger.info("concurrency model: " + model)
         logger.info("masquerade (NAT) address: %s",
                     self.handler.masquerade_address)
         logger.info("passive ports: %s", pasv_ports)
@@ -190,7 +190,8 @@ class FTPServer(Acceptor):
         if getattr(self.handler, 'keyfile', None):
             logger.debug("SSL keyfile: %r", self.handler.keyfile)
 
-    def serve_forever(self, timeout=None, blocking=True, handle_exit=True):
+    def serve_forever(self, timeout=None, blocking=True, handle_exit=True,
+                      worker_processes=1):
         """Start serving.
 
          - (float) timeout: the timeout passed to the underlying IO
@@ -204,11 +205,41 @@ class FTPServer(Acceptor):
            SystemExit exceptions (generally caused by SIGTERM / SIGINT
            signals) and gracefully exits after cleaning up resources.
            Also, logs server start and stop.
+
+         - (int) worker_processes: pre-fork a certain number of child
+           processes before starting.
+           Each child process will keep using a 1-thread, async
+           concurrency model, handling multiple concurrent connections.
+           If the number is None or <= 0 the number of usable cores
+           available on this machine is detected and used.
+           It is a good idea to use this option in case the app risks
+           blocking for too long on a single function call (e.g.
+           hard-disk is slow, long DB query on auth etc.).
+           By splitting the work load over multiple processes the delay
+           introduced by a blocking function call is amortized and divided
+           by the number of worker processes.
         """
-        if handle_exit:
-            log = handle_exit and blocking
+        log = handle_exit and blocking
+
+        #
+        if worker_processes != 1 and os.name == 'posix':
+            if not blocking:
+                raise ValueError(
+                    "'worker_processes' and 'blocking' are mutually exclusive")
+            if log:
+                self._log_start(prefork=True)
+            fork_processes(worker_processes)
+        else:
             if log:
                 self._log_start()
+
+        #
+        proto = "FTP+SSL" if hasattr(self.handler, 'ssl_protocol') else "FTP"
+        logger.info(">>> starting %s server on %s:%s, pid=%i <<<"
+                    % (proto, self.address[0], self.address[1], os.getpid()))
+
+        #
+        if handle_exit:
             try:
                 self.ioloop.loop(timeout, blocking)
             except (KeyboardInterrupt, SystemExit):
@@ -216,9 +247,8 @@ class FTPServer(Acceptor):
             if blocking:
                 if log:
                     logger.info(
-                        ">>> shutting down FTP server (%s active socket "
-                        "fds) <<<",
-                        self._map_len())
+                        ">>> shutting down FTP server, %s socket(s), pid=%i "
+                        "<<<", self._map_len(), os.getpid())
                 self.close_all()
         else:
             self.ioloop.loop(timeout, blocking)
@@ -344,7 +374,7 @@ class _SpawnerBase(FTPServer):
 
     def _loop(self, handler):
         """Serve handler's IO loop in a separate thread or process."""
-        with IOLoop() as ioloop:
+        with self.ioloop.factory() as ioloop:
             handler.ioloop = ioloop
             try:
                 handler.add_channel()
@@ -371,7 +401,7 @@ class _SpawnerBase(FTPServer):
                         poll(timeout=soonest_timeout)
                     if ioloop.sched._tasks:
                         soonest_timeout = sched_poll()
-                        # Handle the case where socket_map is emty but some
+                        # Handle the case where socket_map is empty but some
                         # cancelled scheduled calls are still around causing
                         # this while loop to hog CPU resources.
                         # In theory this should never happen as all the sched
@@ -391,10 +421,10 @@ class _SpawnerBase(FTPServer):
                     # note: these two exceptions are raised in all sub
                     # processes
                     self._exit.set()
-                except select.error as err:
+                except OSError as err:
                     # on Windows we can get WSAENOTSOCK if the client
                     # rapidly connect and disconnects
-                    if os.name == 'nt' and err[0] == 10038:
+                    if os.name == 'nt' and err.winerror == 10038:
                         for fd in list(ioloop.socket_map.keys()):
                             try:
                                 select.select([fd], [], [], 0)
@@ -410,8 +440,8 @@ class _SpawnerBase(FTPServer):
                         raise
                 else:
                     if poll_timeout:
-                        if (soonest_timeout is None or
-                                soonest_timeout > poll_timeout):
+                        if soonest_timeout is None or \
+                                soonest_timeout > poll_timeout:
                             soonest_timeout = poll_timeout
 
     def handle_accepted(self, sock, addr):
@@ -504,25 +534,26 @@ class ThreadedFTPServer(_SpawnerBase):
     _lock = threading.Lock()
     _exit = threading.Event()
 
-    # compatibility with python <= 2.6
-    if not hasattr(_exit, 'is_set'):
-        _exit.is_set = _exit.isSet
-
     def _start_task(self, *args, **kwargs):
         return threading.Thread(*args, **kwargs)
 
 
 if os.name == 'posix':
-    import multiprocessing
+    try:
+        import multiprocessing
+        multiprocessing.Lock()
+    except Exception:  # noqa
+        # see https://github.com/giampaolo/pyftpdlib/issues/496
+        pass
+    else:
+        __all__ += ['MultiprocessFTPServer']
 
-    __all__ += ['MultiprocessFTPServer']
+        class MultiprocessFTPServer(_SpawnerBase):
+            """A modified version of base FTPServer class which spawns a
+            process every time a new connection is established.
+            """
+            _lock = multiprocessing.Lock()
+            _exit = multiprocessing.Event()
 
-    class MultiprocessFTPServer(_SpawnerBase):
-        """A modified version of base FTPServer class which spawns a
-        process every time a new connection is established.
-        """
-        _lock = multiprocessing.Lock()
-        _exit = multiprocessing.Event()
-
-        def _start_task(self, *args, **kwargs):
-            return multiprocessing.Process(*args, **kwargs)
+            def _start_task(self, *args, **kwargs):
+                return multiprocessing.Process(*args, **kwargs)

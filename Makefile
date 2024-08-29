@@ -1,33 +1,48 @@
 # Shortcuts for various tasks (UNIX only).
 # To use a specific Python version run:
-# $ make install PYTHON=python3.3
+# $ make install PYTHON=python3.7
 
-PYTHON = python
+PYTHON = python3
 TSCRIPT = pyftpdlib/test/runner.py
 ARGS =
-DEV_DEPS = \
+PYDEPS = \
 	check-manifest \
 	coverage \
-	flake8 \
-	mock==1.0.1 \
-	pep8 \
-	pyflakes \
-	setuptools \
-	sphinx
-TEST_DEPS = \
-	nose \
 	psutil \
+	pylint \
 	pyopenssl \
-	pysendfile \
-	unittest2
+	rstcheck \
+	ruff \
+	setuptools \
+	teyit \
+	toml-sort \
+	twine
+PYVER = $(shell $(PYTHON) -c "import sys; print(sys.version_info[0])")
+ifeq ($(PYVER), 2)
+	PYDEPS = \
+		ipaddress \
+		mock \
+		psutil \
+		pyopenssl \
+		pysendfile \
+		setuptools
+endif
 
 # In not in a virtualenv, add --user options for install commands.
 INSTALL_OPTS = `$(PYTHON) -c "import sys; print('' if hasattr(sys, 'real_prefix') else '--user')"`
+TEST_PREFIX = PYTHONWARNINGS=always
+NUM_WORKERS = `$(PYTHON) -c "import os; print(os.cpu_count() or 1)"`
+
+
+# ===================================================================
+# Install
+# ===================================================================
 
 all: test
 
 clean:  ## Remove all build files.
-	rm -rf `find . -type d -name __pycache__ \
+	@rm -rfv `find . \
+		-type d -name __pycache__ \
 		-o -type f -name \*.bak \
 		-o -type f -name \*.orig \
 		-o -type f -name \*.pyc \
@@ -37,16 +52,19 @@ clean:  ## Remove all build files.
 		-o -type f -name \*.so \
 		-o -type f -name \*.~ \
 		-o -type f -name \*\$testfn`
-	rm -rf \
+	@rm -rfv \
 		*.core \
 		*.egg-info \
 		*\$testfile* \
 		.coverage \
-		.tox \
+		.failed-tests.txt \
+		.pytest_cache \
+		.ruff_cache/ \
 		build/ \
 		dist/ \
 		docs/_build/ \
 		htmlcov/ \
+		pyftpd-tmp-* \
 		tmp/
 
 install:  ## Install this package.
@@ -56,13 +74,13 @@ install:  ## Install this package.
 
 uninstall:  ## Uninstall this package.
 	cd ..; $(PYTHON) -m pip uninstall -y -v pyftpdlib || true
-	$(PYTHON) scripts/purge_installation.py
+	$(PYTHON) scripts/internal/purge_installation.py
 
 install-pip:  ## (only if necessary)
 	$(PYTHON) -c \
 		"import sys, ssl, os, pkgutil, tempfile, atexit; \
 		sys.exit(0) if pkgutil.find_loader('pip') else None; \
-		pyexc = 'from urllib.request import urlopen' if sys.version_info[0] == 3 else 'from urllib2 import urlopen'; \
+		pyexc = 'from urllib.request import urlopen' if sys.version_info[0] >= 3 else 'from urllib2 import urlopen'; \
 		exec(pyexc); \
 		ctx = ssl._create_unverified_context() if hasattr(ssl, '_create_unverified_context') else None; \
 		kw = dict(context=ctx) if ctx else {}; \
@@ -77,48 +95,47 @@ install-pip:  ## (only if necessary)
 		f.close(); \
 		sys.exit(code);"
 
-setup-dev-env:  ## Install GIT hooks, pip, test deps (also upgrades them).
+setup-dev-env: ## Install GIT hooks, pip, test deps (also upgrades them).
 	${MAKE} install-git-hooks
 	${MAKE} install-pip
-	$(PYTHON) -m pip install $(INSTALL_OPTS) --upgrade pip
-	$(PYTHON) -m pip install $(INSTALL_OPTS) --upgrade $(TEST_DEPS)
-	$(PYTHON) -m pip install $(INSTALL_OPTS) --upgrade $(DEV_DEPS)
+	$(PYTHON) -m pip install $(INSTALL_OPTS) --upgrade pip setuptools
+	$(PYTHON) -m pip install $(INSTALL_OPTS) --upgrade $(PYDEPS)
 
-test:  ## Run all tests.
+# ===================================================================
+# Tests
+# ===================================================================
+
+test:  ## Run all tests. To run a specific test: do "make test ARGS=pyftpdlib.test.test_functional.TestFtpStoreData"
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) $(TSCRIPT)
+	$(TEST_PREFIX) $(PYTHON) $(TSCRIPT) $(ARGS)
 
 test-functional:  ## Run functional FTP tests.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_functional.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_functional.py
 
 test-functional-ssl:  ## Run functional FTPS tests.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_functional_ssl.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_functional_ssl.py
 
 test-servers:  ## Run tests for FTPServer and its subclasses.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_servers.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_servers.py
 
 test-authorizers:  ## Run tests for authorizers.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_authorizers.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_authorizers.py
 
 test-filesystems:  ## Run filesystem tests.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_filesystems.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_filesystems.py
 
 test-ioloop:  ## Run IOLoop tests.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_ioloop.py
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_ioloop.py
 
 test-misc:  ## Run miscellaneous tests.
 	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) pyftpdlib/test/test_misc.py
-
-test-by-name:  ## e.g.: make test-by-name ARGS=pyftpdlib.test.test_functional.TestFtpStoreData
-	${MAKE} install
-	PYTHONWARNINGS=all $(PYTHON) -m unittest -v $(ARGS)
+	$(TEST_PREFIX) $(PYTHON) pyftpdlib/test/test_misc.py
 
 test-coverage:  ## Run test coverage.
 	${MAKE} install
@@ -129,15 +146,48 @@ test-coverage:  ## Run test coverage.
 	$(PYTHON) -m coverage html
 	$(PYTHON) -m webbrowser -t htmlcov/index.html
 
-pep8:  ## PEP8 linter.
-	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m pep8
+# ===================================================================
+# Linters
+# ===================================================================
 
-pyflakes:  ## Pyflakes linter.
-	@export PYFLAKES_NODOCTEST=1 && \
-		git ls-files | grep \\.py$ | xargs $(PYTHON) -m pyflakes
+ruff:  ## Run ruff linter.
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff check --config=pyproject.toml --no-cache
 
-flake8:  ## flake8 linter.
-	@git ls-files | grep \\.py$ | xargs $(PYTHON) -m flake8
+_pylint:  ## Python pylint (not mandatory, just run it from time to time)
+	@git ls-files '*.py' | xargs $(PYTHON) -m pylint --rcfile=pyproject.toml --jobs=${NUM_WORKERS}
+
+lint-rst:  ## Run RsT linter.
+	@git ls-files '*.rst' | xargs rstcheck --config=pyproject.toml
+
+lint-toml:  ## Linter for pyproject.toml
+	@git ls-files '*.toml' | xargs toml-sort --check
+
+lint-all:  ## Run all linters
+	${MAKE} ruff
+	${MAKE} lint-rst
+	${MAKE} lint-toml
+
+# ===================================================================
+# Fixers
+# ===================================================================
+
+fix-ruff:
+	@git ls-files '*.py' | xargs $(PYTHON) -m ruff --config=pyproject.toml --no-cache --fix
+
+fix-toml:  ## Fix pyproject.toml
+	@git ls-files '*.toml' | xargs toml-sort
+
+fix-unittests:  ## Fix unittest idioms.
+	@git ls-files '*test_*.py' | xargs $(PYTHON) -m teyit --show-stats
+
+fix-all:  ## Run all code fixers.
+	${MAKE} fix-ruff
+	${MAKE} fix-toml
+	${MAKE} fix-unittests
+
+# ===================================================================
+# Distribution
+# ===================================================================
 
 check-manifest:  ## Inspect MANIFEST.in file.
 	$(PYTHON) -m check_manifest -v $(ARGS)
@@ -147,11 +197,11 @@ upload-src:  ## Upload source on PYPI.
 	$(PYTHON) setup.py sdist upload
 
 git-tag-release:  ## Git-tag a new release.
-	git tag -a release-`python -c "import setup; print(setup.VERSION)"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`
+	git tag -a release-`python3 -c "import setup; print(setup.VERSION)"` -m `git rev-list HEAD --count`:`git rev-parse --short HEAD`
 	git push --follow-tags
 
-install-git-hooks:  ## Install GIT pre-commit hook
-	ln -sf ../../.git-pre-commit .git/hooks/pre-commit
+install-git-hooks:  ## Install GIT pre-commit hook.
+	ln -sf ../../scripts/internal/git_pre_commit.py .git/hooks/pre-commit
 	chmod +x .git/hooks/pre-commit
 
 grep-todos:  ## Look for TODOs in source files.
@@ -170,14 +220,14 @@ pre-release:  ## All the necessary steps before making a release.
 
 release:  ## Creates a release (tar.gz + upload + git tag release).
 	${MAKE} pre-release
-	$(PYTHON) -m twine upload dist/*  # upload tar on PYPI
+	$(PYTHON) -m twine upload --verbose dist/*  # upload tar on PYPI
 	${MAKE} git-tag-release
 
 generate-manifest:  ## Generates MANIFEST.in file.
-	$(PYTHON) scripts/generate_manifest.py > MANIFEST.in
+	$(PYTHON) scripts/internal/generate_manifest.py > MANIFEST.in
 
 print-announce:  ## Print announce of new release.
-	@$(PYTHON) scripts/print_announce.py
+	@$(PYTHON) scripts/internal/print_announce.py
 
 help: ## Display callable targets.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'

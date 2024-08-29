@@ -1,3 +1,58 @@
+python-pyftpdlib (1.5.9-2) unstable; urgency=medium
+
+  * Team upload.
+  * remove obsolete mock dependency
+
+ -- Alexandre Detiste <tchet@debian.org>  Mon, 25 Mar 2024 16:59:10 +0100
+
+python-pyftpdlib (1.5.9-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream version 1.5.9
+  * add d/gbp.conf matching current Salsa setup
+  * new release vendors a copy of old asyncore and asynchat (Closes: #1040092)
+  * remove obsolete dependency on python3-unittest2 (Closes: #1058974)
+  * refresh patch
+
+ -- Alexandre Detiste <tchet@debian.org>  Tue, 02 Jan 2024 20:49:07 +0100
+
+python-pyftpdlib (1.5.7-3) unstable; urgency=medium
+
+  * Fix debian/watch
+
+ -- Martin <debacle@debian.org>  Mon, 27 Feb 2023 22:13:23 +0000
+
+python-pyftpdlib (1.5.7-2) unstable; urgency=medium
+
+  * Fix dependency for autopkgtest
+
+ -- Martin <debacle@debian.org>  Wed, 02 Nov 2022 10:04:47 +0000
+
+python-pyftpdlib (1.5.7-1) unstable; urgency=medium
+
+  * New upstream version
+  * Drop build-depend and recommend on sendfile, we have Python >= 3.3
+  * Add autopkgtest
+  * Refresh patch
+  * Bump debhelper compat to 13
+
+ -- Martin <debacle@debian.org>  Tue, 01 Nov 2022 13:04:21 +0000
+
+python-pyftpdlib (1.5.4-3) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Bump debhelper from old 11 to 12.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+
+  [ Ondřej Nový ]
+  * d/control: Update Maintainer field with new Debian Python Team
+    contact address.
+  * d/control: Update Vcs-* fields with new Debian Python Team Salsa
+    layout.
+
+ -- Sandro Tosi <morph@debian.org>  Fri, 03 Jun 2022 23:25:03 -0400
+
 python-pyftpdlib (1.5.4-2) unstable; urgency=medium
 
   [ Ondřej Nový ]

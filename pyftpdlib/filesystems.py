@@ -6,22 +6,17 @@ import os
 import stat
 import tempfile
 import time
+
+
 try:
     from stat import filemode as _filemode  # PY 3.3
 except ImportError:
     from tarfile import filemode as _filemode
 try:
-    import pwd
     import grp
+    import pwd
 except ImportError:
     pwd = grp = None
-try:
-    from os import scandir  # py 3.5
-except ImportError:
-    try:
-        from scandir import scandir  # requires "pip install scandir"
-    except ImportError:
-        scandir = None
 
 from ._compat import PY3
 from ._compat import u
@@ -33,6 +28,22 @@ __all__ = ['FilesystemError', 'AbstractedFS']
 
 _months_map = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
                7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+
+
+def _memoize(fun):
+    """A simple memoize decorator for functions supporting (hashable)
+    positional arguments.
+    """
+    def wrapper(*args, **kwargs):
+        key = (args, frozenset(sorted(kwargs.items())))
+        try:
+            return cache[key]
+        except KeyError:
+            ret = cache[key] = fun(*args, **kwargs)
+            return ret
+
+    cache = {}
+    return wrapper
 
 
 # ===================================================================
@@ -50,7 +61,7 @@ class FilesystemError(Exception):
 # --- base class
 # ===================================================================
 
-class AbstractedFS(object):
+class AbstractedFS:
     """A class used to interact with the file system, providing a
     cross-platform interface compatible with both Windows and
     UNIX style filesystems where all paths use "/" separator.
@@ -72,7 +83,7 @@ class AbstractedFS(object):
     def __init__(self, root, cmd_channel):
         """
          - (str) root: the user "real" home directory (e.g. '/home/user')
-         - (instance) cmd_channel: the FTPHandler class instance
+         - (instance) cmd_channel: the FTPHandler class instance.
         """
         assert isinstance(root, unicode)
         # Set initial current working directory.
@@ -237,11 +248,13 @@ class AbstractedFS(object):
     # --- Wrapper methods around os.* calls
 
     def chdir(self, path):
-        """Change the current directory."""
+        """Change the current directory. If this method is overridden
+        it is vital that `cwd` attribute gets set.
+        """
         # note: process cwd will be reset by the caller
         assert isinstance(path, unicode), path
         os.chdir(path)
-        self._cwd = self.fs2ftp(path)
+        self.cwd = self.fs2ftp(path)
 
     def mkdir(self, path):
         """Create the specified directory."""
@@ -288,7 +301,7 @@ class AbstractedFS(object):
         return os.stat(path)
 
     def utime(self, path, timeval):
-        """Perform a utime() call on the given path"""
+        """Perform a utime() call on the given path."""
         # utime expects a int/float (atime, mtime) in seconds
         # thus, setting both access and modify time to timeval
         return os.utime(path, (timeval, timeval))
@@ -369,7 +382,7 @@ class AbstractedFS(object):
 
     if grp is not None:
         def get_group_by_gid(self, gid):
-            """Return the groupname associated with group id.
+            """Return the group name associated with group id.
             If this can't be determined return raw gid instead.
             On Windows just return "group".
             """
@@ -404,6 +417,14 @@ class AbstractedFS(object):
         drwxrwxrwx   1 owner   group          0 Aug 31 18:50 e-books
         -rw-rw-rw-   1 owner   group        380 Sep 02  3:40 module.py
         """
+        @_memoize
+        def get_user_by_uid(uid):
+            return self.get_user_by_uid(uid)
+
+        @_memoize
+        def get_group_by_gid(gid):
+            return self.get_group_by_gid(gid)
+
         assert isinstance(basedir, unicode), basedir
         if self.cmd_channel.use_gmt_times:
             timefunc = time.gmtime
@@ -439,16 +460,13 @@ class AbstractedFS(object):
             if not nlinks:  # non-posix system, let's use a bogus value
                 nlinks = 1
             size = st.st_size  # file size
-            uname = self.get_user_by_uid(st.st_uid)
-            gname = self.get_group_by_gid(st.st_gid)
+            uname = get_user_by_uid(st.st_uid)
+            gname = get_group_by_gid(st.st_gid)
             mtime = timefunc(st.st_mtime)
             # if modification time > 6 months shows "month year"
             # else "month hh:mm";  this matches proftpd format, see:
             # https://github.com/giampaolo/pyftpdlib/issues/187
-            if (now - st.st_mtime) > SIX_MONTHS:
-                fmtstr = "%d  %Y"
-            else:
-                fmtstr = "%d %H:%M"
+            fmtstr = '%d  %Y' if now - st.st_mtime > SIX_MONTHS else '%d %H:%M'
             try:
                 mtimestr = "%s %s" % (_months_map[mtime.tm_mon],
                                       time.strftime(fmtstr, mtime))
@@ -523,7 +541,7 @@ class AbstractedFS(object):
         show_gid = 'unix.gid' in facts
         show_unique = 'unique' in facts
         for basename in listing:
-            retfacts = dict()
+            retfacts = {}
             if not PY3:
                 try:
                     file = os.path.join(basedir, basename)

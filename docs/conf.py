@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #
 # pyftpdlib documentation build configuration file, created by
 # sphinx-quickstart on Wed Oct 19 21:54:30 2016.
@@ -22,12 +21,13 @@
 
 # -- General configuration ------------------------------------------------
 
+import ast
 import datetime
 import os
 
 
 PROJECT_NAME = "pyftpdlib"
-AUTHOR = u"Giampaolo Rodola"
+AUTHOR = "Giampaolo Rodola"
 THIS_YEAR = str(datetime.datetime.now().year)
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -35,10 +35,10 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 def get_version():
     INIT = os.path.abspath(os.path.join(HERE, '..', 'pyftpdlib',
                                         '__init__.py'))
-    with open(INIT, 'r') as f:
+    with open(INIT) as f:
         for line in f:
             if line.startswith('__ver__'):
-                ret = eval(line.strip().split(' = ')[1])
+                ret = ast.literal_eval(line.strip().split(' = ')[1])
                 assert ret.count('.') == 2, ret
                 for num in ret.split('.'):
                     assert num.isdigit(), ret
@@ -268,28 +268,28 @@ htmlhelp_basename = '%s-doc' % PROJECT_NAME
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-     # The paper size ('letterpaper' or 'a4paper').
-     #
-     # 'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #
+    # 'papersize': 'letterpaper',
 
-     # The font size ('10pt', '11pt' or '12pt').
-     #
-     # 'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #
+    # 'pointsize': '10pt',
 
-     # Additional stuff for the LaTeX preamble.
-     #
-     # 'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #
+    # 'preamble': '',
 
-     # Latex figure (float) alignment
-     #
-     # 'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #
+    # 'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'pyftpdlib.tex', u'pyftpdlib Documentation',
+    (master_doc, 'pyftpdlib.tex', 'pyftpdlib Documentation',
      AUTHOR, 'manual'),
 ]
 
@@ -315,7 +315,7 @@ latex_documents = [
 #
 # latex_appendices = []
 
-# It false, will not define \strong, \code, 	itleref, \crossref ... but only
+# It false, will not define \strong, \code,     itleref, \crossref ... but only
 # \sphinxstrong, ..., \sphinxtitleref, ... To help avoid clash with user added
 # packages.
 #
@@ -331,7 +331,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'pyftpdlib', u'pyftpdlib Documentation',
+    (master_doc, 'pyftpdlib', 'pyftpdlib Documentation',
      [author], 1)
 ]
 
@@ -346,7 +346,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'pyftpdlib', u'pyftpdlib Documentation',
+    (master_doc, 'pyftpdlib', 'pyftpdlib Documentation',
      author, 'pyftpdlib', 'One line description of project.',
      'Miscellaneous'),
 ]

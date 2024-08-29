@@ -109,7 +109,7 @@ To enable DEBUG logging from command line use:
 
 .. code-block:: bash
 
-    python -m pyftpdlib -D
+    python3 -m pyftpdlib -D
 
 DEBUG logs look like this:
 
@@ -177,15 +177,14 @@ authenticating users and their passwords but storing clear-text passwords is of
 course undesirable. The most common way to do things in such case would be
 first creating new users and then storing their usernames + passwords as hash
 digests into a file or wherever you find it convenient. The example below shows
-how to storage passwords as one-way hashes by using md5 algorithm.
+how to store passwords as one-way hashes by using md5 algorithm.
 
 `source code <https://github.com/giampaolo/pyftpdlib/blob/master/demo/md5_ftpd.py>`__
 
 .. code-block:: python
 
     import os
-    import sys
-    from hashlib import md5
+    import hashlib
 
     from pyftpdlib.handlers import FTPHandler
     from pyftpdlib.servers import FTPServer
@@ -195,11 +194,9 @@ how to storage passwords as one-way hashes by using md5 algorithm.
     class DummyMD5Authorizer(DummyAuthorizer):
 
         def validate_authentication(self, username, password, handler):
-            if sys.version_info >= (3, 0):
-                password = md5(password.encode('latin1'))
-            hash = md5(password).hexdigest()
+            hash_ = hashlib.md5(password.encode('latin1')).hexdigest()
             try:
-                if self.user_table[username]['pwd'] != hash:
+                if self.user_table[username]['pwd'] != hash_:
                     raise KeyError
             except KeyError:
                 raise AuthenticationFailed
@@ -207,14 +204,16 @@ how to storage passwords as one-way hashes by using md5 algorithm.
 
     def main():
         # get a hash digest from a clear-text password
-        hash = md5('12345').hexdigest()
+        password = '12345'
+        hash_ = hashlib.md5(password.encode('latin1')).hexdigest()
         authorizer = DummyMD5Authorizer()
-        authorizer.add_user('user', hash, os.getcwd(), perm='elradfmwMT')
+        authorizer.add_user('user', hash_, os.getcwd(), perm='elradfmwMT')
         authorizer.add_anonymous(os.getcwd())
         handler = FTPHandler
         handler.authorizer = authorizer
         server = FTPServer(('', 2121), handler)
         server.serve_forever()
+
 
     if __name__ == "__main__":
         main()
@@ -281,11 +280,10 @@ installed.
     if __name__ == "__main__":
         main()
 
-
 Changing the concurrency model
 ==============================
 
-By nature pyftpdlib is asynchronous. This means it uses a single process/thread
+By nature pyftpdlib is asynchronous. That means it uses a single process/thread
 to handle multiple client connections and file transfers. This is why it is so
 fast, lightweight and scalable (see `benchmarks <benchmarks.html>`__). The
 async model has one big drawback though: the code cannot contain instructions
@@ -297,22 +295,22 @@ appropriate, and that is when you're dealing with a particularly slow
 filesystem (say a network filesystem such as samba). If the filesystem is slow
 (say, a ``open(file, 'r').read(8192)`` takes 2 secs to complete) then you are
 stuck.
-Starting from version 1.0.0 pyftpdlib supports 2 new classes which changes the
-default concurrency model by introducing multiple threads or processes. In
-technical terms this means that every time a client connects a separate
-thread/process is spawned and internally it will run its own IO loop. In
-practical terms this means that you can block as long as you want.
+Starting from version 1.0.0 pyftpdlib can change the concurrency model by using
+multiple processes or threads instead.
+In technical (internal) terms that means that every time a client connects a
+separate thread/process is spawned and internally it will run its own IO loop.
+In practical terms this means that you can block as long as you want.
 Changing the concurrency module is easy: you just need to import a substitute
 for `FTPServer <api.html#pyftpdlib.servers.FTPServer>`__. class:
 
-Thread-based example:
+Multiple threads
+^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
     from pyftpdlib.handlers import FTPHandler
     from pyftpdlib.servers import ThreadedFTPServer  # <-
     from pyftpdlib.authorizers import DummyAuthorizer
-
 
     def main():
         authorizer = DummyAuthorizer()
@@ -326,14 +324,14 @@ Thread-based example:
         main()
 
 
-Multiple process example:
+Multiple processes
+^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 
     from pyftpdlib.handlers import FTPHandler
     from pyftpdlib.servers import MultiprocessFTPServer  # <-
     from pyftpdlib.authorizers import DummyAuthorizer
-
 
     def main():
         authorizer = DummyAuthorizer()
@@ -346,7 +344,42 @@ Multiple process example:
     if __name__ == "__main__":
         main()
 
+Pre fork
+^^^^^^^^
 
+There also exists a third option (UNIX only): the pre-fork model.
+Pre-fork means that a certain number of worker processes are ``spawn()``-ed
+before starting the server.
+Each worker process will keep using a 1-thread, async concurrency model,
+handling multiple concurrent connections, but the workload is split.
+This way the delay introduced by a blocking function call is amortized and
+divided by the number of workers, and thus also the disk I/O latency is
+minimized.
+Every time a new connection comes in, the parent process will automatically
+delegate the connection to one of the subprocesses, so from the app standpoint
+this is completely transparent.
+As a general rule, it is always a good idea to use this model in production.
+The optimal value depends on many factors including (but not limited to) the
+number of CPU cores, the number of hard disk drives that store data, and load
+pattern. When one is in doubt, setting it to the number of available CPU cores
+would be a good start.
+
+.. code-block:: python
+
+    from pyftpdlib.handlers import FTPHandler
+    from pyftpdlib.servers import FTPServer
+    from pyftpdlib.authorizers import DummyAuthorizer
+
+    def main():
+        authorizer = DummyAuthorizer()
+        authorizer.add_user('user', '12345', '.')
+        handler = FTPHandler
+        handler.authorizer = authorizer
+        server = FTPServer(('', 2121), handler)
+        server.serve_forever(worker_processes=4)  # <-
+
+    if __name__ == "__main__":
+        main()
 
 Throttle bandwidth
 ==================
@@ -368,7 +401,6 @@ seconds.
     from pyftpdlib.handlers import FTPHandler, ThrottledDTPHandler
     from pyftpdlib.servers import FTPServer
     from pyftpdlib.authorizers import DummyAuthorizer
-
 
     def main():
         authorizer = DummyAuthorizer()
@@ -421,7 +453,6 @@ which include both and is available
     from pyftpdlib.authorizers import DummyAuthorizer
     from pyftpdlib.handlers import TLS_FTPHandler
 
-
     def main():
         authorizer = DummyAuthorizer()
         authorizer.add_user('user', '12345', '.', perm='elradfmwMT')
@@ -455,7 +486,7 @@ A small example which shows how to use callback methods via
     class MyHandler(FTPHandler):
 
         def on_connect(self):
-            print "%s:%s connected" % (self.remote_ip, self.remote_port)
+            print("%s:%s connected" % (self.remote_ip, self.remote_port))
 
         def on_disconnect(self):
             # do something when client disconnects
@@ -511,7 +542,7 @@ Anonymous FTPd sharing current directory:
 
 .. code-block:: sh
 
-    $ python -m pyftpdlib
+    $ python3 -m pyftpdlib
     [I 13-04-09 17:55:18] >>> starting FTP server on 0.0.0.0:2121, pid=6412 <<<
     [I 13-04-09 17:55:18] poller: <class 'pyftpdlib.ioloop.Epoll'>
     [I 13-04-09 17:55:18] masquerade (NAT) address: None
@@ -522,12 +553,12 @@ Anonymous FTPd with write permission:
 
 .. code-block:: sh
 
-    $ python -m pyftpdlib -w
+    $ python3 -m pyftpdlib -w
 
 Set a different address/port and home directory:
 
 .. code-block:: sh
 
-    $ python -m pyftpdlib -i localhost -p 8021 -d /home/someone
+    $ python3 -m pyftpdlib -i localhost -p 8021 -d /home/someone
 
-See ``python -m pyftpdlib -h`` for a complete list of options.
+See ``python3 -m pyftpdlib -h`` for a complete list of options.

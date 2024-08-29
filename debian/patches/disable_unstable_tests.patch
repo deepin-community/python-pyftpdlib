@@ -1,22 +1,22 @@
 Description: Disable automatic tests, that are know to be unstable
-Author: W. Martin Borgert <debacle@debian.org>
+Author: Martin <debacle@debian.org>
 Origin: vendor
 Bug: https://github.com/giampaolo/pyftpdlib/issues/420
 Bug-Debian: https://bugs.debian.org/856335
-Last-Update: 2017-04-23
+Last-Update: 2022-11-01
 ---
 This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 --- a/pyftpdlib/test/runner.py
 +++ b/pyftpdlib/test/runner.py
-@@ -16,8 +16,10 @@
+@@ -130,9 +130,10 @@
+ class TestLoader:
  
+     testdir = HERE
+-    skip_files = []
++    skip_files = os.environ.get("EXCLUDETESTS", "").split()
  
- def main():
-+    excludefiles = os.environ.get("EXCLUDETESTS", "").split()
-     testmodules = [os.path.splitext(x)[0] for x in os.listdir(HERE)
--                   if x.endswith('.py') and x.startswith('test_')]
-+                   if x.endswith('.py') and x.startswith('test_')
-+                   and x not in excludefiles]
-     configure_logging()
-     remove_test_files()
-     suite = unittest.TestSuite()
+     def _get_testmods(self):
++        excludefiles = os.environ.get("EXCLUDETESTS", "").split()
+         return [os.path.join(self.testdir, x)
+                 for x in os.listdir(self.testdir)
+                 if x.startswith('test_') and x.endswith('.py') and
